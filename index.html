@@ -201,6 +201,55 @@
             render();
         }
 
+        // Silent version for multi-select steps - updates visuals without full render
+        function toggleArrayValueSilent(field, value, buttonId) {
+            const current = state.formData[field];
+            const button = document.getElementById(buttonId);
+            
+            if (current.includes(value)) {
+                // Remove from array
+                state.formData[field] = current.filter(v => v !== value);
+                // Update button visual
+                if (button) {
+                    button.classList.remove('border-[#6B7B5E]', 'bg-green-50');
+                    button.classList.add('border-gray-200');
+                    const checkmark = button.querySelector('.checkmark');
+                    if (checkmark) checkmark.remove();
+                }
+            } else {
+                // Add to array
+                state.formData[field] = [...current, value];
+                // Update button visual
+                if (button) {
+                    button.classList.remove('border-gray-200');
+                    button.classList.add('border-[#6B7B5E]', 'bg-green-50');
+                    // Add checkmark if not exists
+                    if (!button.querySelector('.checkmark')) {
+                        const icon = button.querySelector('.text-2xl') || button.querySelector('.text-xl');
+                        if (icon) {
+                            const checkmark = document.createElement('span');
+                            checkmark.className = 'checkmark text-[#6B7B5E] text-2xl';
+                            checkmark.textContent = '✓';
+                            icon.insertAdjacentElement('afterend', checkmark);
+                        }
+                    }
+                }
+            }
+            
+            // Update Continue button state for proteins
+            if (field === 'proteins') {
+                const continueBtn = document.getElementById('proteins-continue-btn');
+                if (continueBtn) {
+                    continueBtn.disabled = state.formData.proteins.length === 0;
+                    if (state.formData.proteins.length === 0) {
+                        continueBtn.classList.add('disabled:opacity-50', 'disabled:cursor-not-allowed');
+                    } else {
+                        continueBtn.classList.remove('disabled:opacity-50', 'disabled:cursor-not-allowed');
+                    }
+                }
+            }
+        }
+
         // OPTION A: Let browser handle input - no render on keystroke
         function handleZipInput(value) {
             // Clean and update state silently
@@ -524,13 +573,14 @@
                         <div class="grid sm:grid-cols-2 gap-3 sm:gap-4">
                             ${proteins.map((protein, idx) => `
                                 <button
-                                    onclick="toggleArrayValue('proteins', '${protein.value}')"
+                                    id="protein-${protein.value}"
+                                    onclick="toggleArrayValueSilent('proteins', '${protein.value}', 'protein-${protein.value}')"
                                     class="card-hover bg-white p-4 sm:p-6 rounded-2xl text-left border-2 ${state.formData.proteins.includes(protein.value) ? 'border-[#6B7B5E] bg-green-50' : 'border-gray-200'} transition-all animate-slideInRight stagger-${(idx % 4) + 1}"
                                 >
                                     <div class="flex items-center gap-3 sm:gap-4">
                                         <span class="text-3xl sm:text-4xl">${protein.emoji}</span>
                                         <span class="text-base sm:text-lg font-semibold text-gray-800 flex-1">${protein.label}</span>
-                                        ${state.formData.proteins.includes(protein.value) ? '<span class="text-[#6B7B5E] text-2xl">✓</span>' : ''}
+                                        ${state.formData.proteins.includes(protein.value) ? '<span class="checkmark text-[#6B7B5E] text-2xl">✓</span>' : ''}
                                     </div>
                                 </button>
                             `).join('')}
@@ -544,6 +594,7 @@
                                 ← Back
                             </button>
                             <button
+                                id="proteins-continue-btn"
                                 onclick="handleNext()"
                                 ${state.formData.proteins.length === 0 ? 'disabled' : ''}
                                 class="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg font-bold inline-flex items-center justify-center gap-3"
@@ -585,12 +636,13 @@
                         <div class="grid sm:grid-cols-2 gap-3 sm:gap-4">
                             ${avoidances.map((avoidance, idx) => `
                                 <button
-                                    onclick="toggleArrayValue('avoidances', '${avoidance}')"
+                                    id="avoidance-${idx}"
+                                    onclick="toggleArrayValueSilent('avoidances', '${avoidance}', 'avoidance-${idx}')"
                                     class="card-hover bg-white p-4 sm:p-5 rounded-2xl text-left border-2 ${state.formData.avoidances.includes(avoidance) ? 'border-[#6B7B5E] bg-green-50' : 'border-gray-200'} transition-all animate-slideInRight stagger-${(idx % 4) + 1}"
                                 >
                                     <div class="flex items-center justify-between">
                                         <span class="text-sm sm:text-base font-semibold text-gray-800">${avoidance}</span>
-                                        ${state.formData.avoidances.includes(avoidance) ? '<span class="text-[#6B7B5E] text-xl">✓</span>' : ''}
+                                        ${state.formData.avoidances.includes(avoidance) ? '<span class="checkmark text-[#6B7B5E] text-xl">✓</span>' : ''}
                                     </div>
                                 </button>
                             `).join('')}
